@@ -24,6 +24,13 @@ namespace mp2t {
 namespace {
 const double kTsTimescale = 90000;
 
+const uint8_t kPaddings[] = {
+    0x10,
+    0x0c,
+    0x08,
+    0x04
+};
+
 bool IsAudioCodec(Codec codec) {
   return codec >= kCodecAudio && codec < kCodecAudioMaxPlusOne;
 }
@@ -45,8 +52,6 @@ TsSegmenter::TsSegmenter(const MuxerOptions& options, MuxerListener* listener)
 TsSegmenter::~TsSegmenter() {}
 
 Status TsSegmenter::Initialize(const StreamInfo& stream_info) {
-  if (muxer_options_.segment_template.empty())
-    return Status(error::MUXER_FAILURE, "Segment template not specified.");
   if (!pes_packet_generator_->Initialize(stream_info)) {
     return Status(error::MUXER_FAILURE,
                   "Failed to initialize PesPacketGenerator.");
@@ -65,11 +70,12 @@ Status TsSegmenter::Initialize(const StreamInfo& stream_info) {
     audio_codec_config_ = stream_info.codec_config();
 
   timescale_scale_ = kTsTimescale / stream_info.time_scale();
-  return Status::OK;
+
+  return DoInitialize();
 }
 
 Status TsSegmenter::Finalize() {
-  return Status::OK;
+  return DoFinalize();
 }
 
 Status TsSegmenter::AddSample(const MediaSample& sample) {
@@ -136,6 +142,10 @@ Status TsSegmenter::StartSegmentIfNeeded(int64_t next_pts) {
   return Status::OK;
 }
 
+double TsSegmenter::GetDuration() const {
+  return 0 * timescale_scale_;
+}
+
 Status TsSegmenter::WritePesPackets() {
   while (pes_packet_generator_->NumberOfReadyPesPackets() > 0u) {
     std::unique_ptr<PesPacket> pes_packet =
@@ -167,6 +177,7 @@ Status TsSegmenter::FinalizeSegment(int64_t start_timestamp, int64_t duration) {
   if (!pes_packet_generator_->Flush()) {
     return Status(error::MUXER_FAILURE, "Failed to flush PesPacketGenerator.");
   }
+
   Status status = WritePesPackets();
   if (!status.ok())
     return status;
@@ -175,26 +186,17 @@ Status TsSegmenter::FinalizeSegment(int64_t start_timestamp, int64_t duration) {
   // be false.
   if (!segment_started_)
     return Status::OK;
-  std::string segment_path =
-        GetSegmentName(muxer_options_.segment_template, segment_start_timestamp_,
-                       segment_number_++, muxer_options_.bandwidth);
 
   const int64_t file_size = segment_buffer_.Size();
-  std::unique_ptr<File, FileCloser> segment_file;
-  segment_file.reset(File::Open(segment_path.c_str(), "w"));
-  if (!segment_file) {
-    return Status(error::FILE_FAILURE,
-                  "Cannot open file for write " + segment_path);
-  }
+  segment_number_++;
+  
+  AddHls32Padding(file_size);
 
-  RETURN_IF_ERROR(segment_buffer_.WriteToFile(segment_file.get()));
+  status = ProcessSegmentBuffer();
+  if(!status.ok())
+    return status;
 
-  if (!segment_file.release()->Close()) {
-    return Status(
-        error::FILE_FAILURE,
-        "Cannot close file " + segment_path +
-        ", possibly file permission issue or running out of disk space.");
-  }
+  std::string segment_path = GetSegmentPath();
 
   if (listener_) {
     listener_->OnNewSegment(segment_path,
@@ -203,6 +205,70 @@ Status TsSegmenter::FinalizeSegment(int64_t start_timestamp, int64_t duration) {
                             duration * timescale_scale_, file_size);
   }
   segment_started_ = false;
+
+  return Status::OK;
+}
+
+Status TsSegmenter::AddHls32Padding(int64_t file_size)
+{
+  // HLS32
+  int8_t stuffing_packet_count = 0, padding_bytes_count = 0, padding_bytes_index = 0;
+  switch ( file_size % 32 )
+  {
+    case 0:
+      stuffing_packet_count = 4;
+      padding_bytes_count = 16;
+      padding_bytes_index = 0;
+      break;
+    case 4:
+      stuffing_packet_count = 5;
+      padding_bytes_count = 16;
+      padding_bytes_index = 0;
+      break;
+    case 8:
+      stuffing_packet_count = 6;
+      padding_bytes_count = 16;
+      padding_bytes_index = 0;
+      break;
+    case 12:
+      stuffing_packet_count = 7;
+      padding_bytes_count = 16;
+      padding_bytes_index = 0;
+      break;
+    case 16:
+      stuffing_packet_count = 0;
+      padding_bytes_count = 16;
+      padding_bytes_index = 0;
+      break;
+    case 20:
+      stuffing_packet_count = 0;
+      padding_bytes_count = 12;
+      padding_bytes_index = 1;
+      break;
+    case 24:
+      stuffing_packet_count = 0;
+      padding_bytes_count = 8;
+      padding_bytes_index = 2;
+      break;
+    case 28:
+      stuffing_packet_count = 0;
+      padding_bytes_count = 4;
+      padding_bytes_index = 3;
+      break;
+    default:
+      stuffing_packet_count = 0;
+      padding_bytes_count = 0;
+    break;
+  }
+
+  for (int i = 0; i < stuffing_packet_count; i++) {
+    if(!ts_writer_->AddStuffingPacket(&segment_buffer_))
+      return Status(error::MUXER_FAILURE, "Failed to add stuffing packet.");
+  }
+
+  for (int i = 0; i < padding_bytes_count; i++) {
+    segment_buffer_.AppendInt(kPaddings[padding_bytes_index]);
+  }
 
   return Status::OK;
 }

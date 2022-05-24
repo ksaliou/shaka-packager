@@ -39,7 +39,8 @@ void WritePayloadToBufferWriter(const uint8_t* payload,
                                 uint64_t pcr_base,
                                 ContinuityCounter* continuity_counter,
                                 BufferWriter* output);
-
+                                
+void WriteStuffingToBufferWriter(BufferWriter* writer);
 }  // namespace mp2t
 }  // namespace media
 }  // namespace shaka

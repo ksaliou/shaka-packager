@@ -160,6 +160,21 @@ void WritePayloadToBufferWriter(const uint8_t* payload,
   } while (payload_bytes_written < payload_size);
 }
 
+void WriteStuffingToBufferWriter(BufferWriter* writer) {
+  writer->AppendInt(kSyncByte);
+  writer->AppendInt(static_cast<uint16_t>(
+      // transport_error_indicator and transport_priority are both '0'.
+      static_cast<int>(false) << 14 | 0x1FFF));
+
+  const uint8_t adaptation_field_control = 1;
+  // transport_scrambling_control is '00'.
+  writer->AppendInt(static_cast<uint8_t>(adaptation_field_control << 4));
+
+  DCHECK_GE(static_cast<int>(arraysize(kPaddingBytes)), kTsPacketMaximumPayloadSize);
+  writer->AppendArray(kPaddingBytes,
+                      kTsPacketMaximumPayloadSize);
+}
+
 }  // namespace mp2t
 }  // namespace media
 }  // namespace shaka

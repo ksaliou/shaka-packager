@@ -100,11 +100,19 @@ File* CreateUdpFile(const char* file_name, const char* mode) {
 }
 
 File* CreateHttpsFile(const char* file_name, const char* mode) {
-  return new HttpFile(HttpMethod::kPut, std::string("https://") + file_name);
+  if (strcmp(mode, "r")) {
+    return new HttpFile(HttpMethod::kPut, std::string("https://") + file_name);
+  } else {
+    return new HttpFile(HttpMethod::kGet, std::string("https://") + file_name);
+  }
 }
 
 File* CreateHttpFile(const char* file_name, const char* mode) {
-  return new HttpFile(HttpMethod::kPut, std::string("http://") + file_name);
+  if (strcmp(mode, "r")) {
+    return new HttpFile(HttpMethod::kPut, std::string("http://") + file_name);
+  } else {
+    return new HttpFile(HttpMethod::kGet, std::string("http://") + file_name);
+  }
 }
 
 File* CreateMemoryFile(const char* file_name, const char* mode) {

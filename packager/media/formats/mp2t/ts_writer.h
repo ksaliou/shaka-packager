@@ -47,6 +47,12 @@ class TsWriter {
   /// @return true on success, false otherwise.
   virtual bool AddPesPacket(std::unique_ptr<PesPacket> pes_packet, BufferWriter* buffer);
 
+  /// Add stuffing packet to the instance.
+  /// immediately.
+  /// @param buffer to write stuffing packet.
+  /// @return true on success, false otherwise.
+  virtual bool AddStuffingPacket(BufferWriter* buffer);
+
  private:
   TsWriter(const TsWriter&) = delete;
   TsWriter& operator=(const TsWriter&) = delete;

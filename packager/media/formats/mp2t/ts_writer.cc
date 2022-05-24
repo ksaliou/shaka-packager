@@ -158,6 +158,13 @@ bool WritePesToBuffer(const PesPacket& pes,
   return true;
 }
 
+bool WriteStuffingToBuffer(BufferWriter* current_buffer) {
+  BufferWriter stuffing_writer;
+  WriteStuffingToBufferWriter(&stuffing_writer);
+  current_buffer->AppendBuffer(stuffing_writer);
+  return true;
+}
+
 }  // namespace
 
 TsWriter::TsWriter(std::unique_ptr<ProgramMapTableWriter> pmt_writer)
@@ -192,6 +199,17 @@ bool TsWriter::AddPesPacket(std::unique_ptr<PesPacket> pes_packet,
   if (!WritePesToBuffer(*pes_packet, &elementary_stream_continuity_counter_,
                         buffer)) {
     LOG(ERROR) << "Failed to write pes to buffer.";
+    return false;
+  }
+
+  // No need to keep pes_packet around so not passing it anywhere.
+  return true;
+}
+
+bool TsWriter::AddStuffingPacket(BufferWriter* buffer) {
+
+  if (!WriteStuffingToBuffer(buffer)) {
+    LOG(ERROR) << "Failed to write stuffing to buffer.";
     return false;
   }
 

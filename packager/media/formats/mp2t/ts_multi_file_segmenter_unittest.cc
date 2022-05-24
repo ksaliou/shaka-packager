@@ -13,6 +13,8 @@
 #include "packager/media/formats/mp2t/pes_packet.h"
 #include "packager/media/formats/mp2t/program_map_table_writer.h"
 #include "packager/media/formats/mp2t/ts_segmenter.h"
+#include "packager/media/formats/mp2t/ts_multi_file_segmenter.h"
+#include "packager/media/formats/mp2t/ts_single_file_segmenter.h"
 #include "packager/status_test_util.h"
 #include "packager/media/base/macros.h"
 
@@ -98,7 +100,7 @@ class MockTsWriter : public TsWriter {
 
 }  // namespace
 
-class TsSegmenterTest : public ::testing::Test {
+class TsMultiFileSegmenterTest : public ::testing::Test {
  protected:
   void SetUp() override {
     mock_ts_writer_.reset(new MockTsWriter());
@@ -109,7 +111,7 @@ class TsSegmenterTest : public ::testing::Test {
   std::unique_ptr<MockPesPacketGenerator> mock_pes_packet_generator_;
 };
 
-TEST_F(TsSegmenterTest, Initialize) {
+TEST_F(TsMultiFileSegmenterTest, Initialize) {
   std::shared_ptr<VideoStreamInfo> stream_info(new VideoStreamInfo(
       kTrackId, kTimeScale, kDuration, kH264Codec,
       H26xStreamFormat::kAnnexbByteStream, kCodecString, kExtraData,
@@ -118,7 +120,7 @@ TEST_F(TsSegmenterTest, Initialize) {
       kIsEncrypted));
   MuxerOptions options;
   options.segment_template = "file$Number$.ts";
-  TsSegmenter segmenter(options, nullptr);
+  TsMultiFileSegmenter segmenter(options, nullptr);
 
   EXPECT_CALL(*mock_pes_packet_generator_, Initialize(_))
       .WillOnce(Return(true));
@@ -129,7 +131,7 @@ TEST_F(TsSegmenterTest, Initialize) {
   EXPECT_OK(segmenter.Initialize(*stream_info));
 }
 
-TEST_F(TsSegmenterTest, AddSample) {
+TEST_F(TsMultiFileSegmenterTest, AddSample) {
   std::shared_ptr<VideoStreamInfo> stream_info(new VideoStreamInfo(
       kTrackId, kTimeScale, kDuration, kH264Codec,
       H26xStreamFormat::kAnnexbByteStream, kCodecString, kExtraData,
@@ -138,7 +140,7 @@ TEST_F(TsSegmenterTest, AddSample) {
       kIsEncrypted));
   MuxerOptions options;
   options.segment_template = "file$Number$.ts";
-  TsSegmenter segmenter(options, nullptr);
+  TsMultiFileSegmenter segmenter(options, nullptr);
 
   EXPECT_CALL(*mock_pes_packet_generator_, Initialize(_))
       .WillOnce(Return(true));
@@ -178,7 +180,7 @@ TEST_F(TsSegmenterTest, AddSample) {
 }
 
 // This will add one sample then finalize segment then add another sample.
-TEST_F(TsSegmenterTest, PassedSegmentDuration) {
+TEST_F(TsMultiFileSegmenterTest, PassedSegmentDuration) {
   // Use something significantly smaller than 90000 to check that the scaling is
   // done correctly in the segmenter.
   const int32_t kInputTimescale = 1001;
@@ -192,7 +194,7 @@ TEST_F(TsSegmenterTest, PassedSegmentDuration) {
   options.segment_template = "memory://file$Number$.ts";
 
   MockMuxerListener mock_listener;
-  TsSegmenter segmenter(options, &mock_listener);
+  TsMultiFileSegmenter segmenter(options, &mock_listener);
 
   const int32_t kFirstPts = 1000;
 
@@ -272,7 +274,7 @@ TEST_F(TsSegmenterTest, PassedSegmentDuration) {
 }
 
 // Finalize right after Initialize(). The writer will not be initialized.
-TEST_F(TsSegmenterTest, InitializeThenFinalize) {
+TEST_F(TsMultiFileSegmenterTest, InitializeThenFinalize) {
   std::shared_ptr<VideoStreamInfo> stream_info(new VideoStreamInfo(
       kTrackId, kTimeScale, kDuration, kH264Codec,
       H26xStreamFormat::kAnnexbByteStream, kCodecString, kExtraData,
@@ -281,7 +283,7 @@ TEST_F(TsSegmenterTest, InitializeThenFinalize) {
       kIsEncrypted));
   MuxerOptions options;
   options.segment_template = "file$Number$.ts";
-  TsSegmenter segmenter(options, nullptr);
+  TsMultiFileSegmenter segmenter(options, nullptr);
 
   EXPECT_CALL(*mock_pes_packet_generator_, Initialize(_))
       .WillOnce(Return(true));
@@ -300,7 +302,7 @@ TEST_F(TsSegmenterTest, InitializeThenFinalize) {
 // been initialized.
 // The test does not really add any samples but instead simulates an initialized
 // writer with a mock.
-TEST_F(TsSegmenterTest, FinalizeSegment) {
+TEST_F(TsMultiFileSegmenterTest, FinalizeSegment) {
   std::shared_ptr<VideoStreamInfo> stream_info(new VideoStreamInfo(
       kTrackId, kTimeScale, kDuration, kH264Codec,
       H26xStreamFormat::kAnnexbByteStream, kCodecString, kExtraData,
@@ -309,7 +311,7 @@ TEST_F(TsSegmenterTest, FinalizeSegment) {
       kIsEncrypted));
   MuxerOptions options;
   options.segment_template = "file$Number$.ts";
-  TsSegmenter segmenter(options, nullptr);
+  TsMultiFileSegmenter segmenter(options, nullptr);
 
   EXPECT_CALL(*mock_pes_packet_generator_, Initialize(_))
       .WillOnce(Return(true));
@@ -327,7 +329,7 @@ TEST_F(TsSegmenterTest, FinalizeSegment) {
   EXPECT_OK(segmenter.FinalizeSegment(0, 100 /* arbitrary duration*/));
 }
 
-TEST_F(TsSegmenterTest, EncryptedSample) {
+TEST_F(TsMultiFileSegmenterTest, EncryptedSample) {
   std::shared_ptr<VideoStreamInfo> stream_info(new VideoStreamInfo(
       kTrackId, kTimeScale, kDuration, kH264Codec,
       H26xStreamFormat::kAnnexbByteStream, kCodecString, kExtraData,
@@ -339,7 +341,7 @@ TEST_F(TsSegmenterTest, EncryptedSample) {
   options.segment_template = "memory://file$Number$.ts";
 
   MockMuxerListener mock_listener;
-  TsSegmenter segmenter(options, &mock_listener);
+  TsMultiFileSegmenter segmenter(options, &mock_listener);
 
   ON_CALL(*mock_ts_writer_, NewSegment(_)).WillByDefault(Return(true));
   ON_CALL(*mock_ts_writer_, AddPesPacketMock(_,_)).WillByDefault(Return(true));

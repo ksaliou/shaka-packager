@@ -37,6 +37,10 @@ class TsMuxer : public Muxer {
   int64_t sample_durations_[2];
   int64_t num_samples_ = 0;
 
+  base::Optional<Range> GetInitRangeStartAndEnd();
+  base::Optional<Range> GetIndexRangeStartAndEnd();
+  void SetStartAndEndFromOffsetAndSize(size_t offset, size_t size, Range* range);
+
   DISALLOW_COPY_AND_ASSIGN(TsMuxer);
 };
 
