@@ -46,6 +46,8 @@ struct PackagingParams {
   int32_t transport_stream_timestamp_offset_ms = 0;
   /// Chunking (segmentation) related parameters.
   ChunkingParams chunking_params;
+  /// Add padding and stuffing to the end of TS segments to be a multiple of 32 bytes
+  bool transport_stream_32_bytes_padding = false;
 
   /// Out of band cuepoint parameters.
   AdCueGeneratorParams ad_cue_generator_params;

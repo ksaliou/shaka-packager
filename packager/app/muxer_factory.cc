@@ -24,7 +24,8 @@ MuxerFactory::MuxerFactory(const PackagingParams& packaging_params)
     : mp4_params_(packaging_params.mp4_output_params),
       temp_dir_(packaging_params.temp_dir),
       transport_stream_timestamp_offset_ms_(
-          packaging_params.transport_stream_timestamp_offset_ms) {}
+          packaging_params.transport_stream_timestamp_offset_ms),
+          transport_stream_32_bytes_padding_(packaging_params.transport_stream_32_bytes_padding) {}
 
 std::shared_ptr<Muxer> MuxerFactory::CreateMuxer(
     MediaContainerName output_format,
@@ -37,6 +38,7 @@ std::shared_ptr<Muxer> MuxerFactory::CreateMuxer(
   options.output_file_name = stream.output;
   options.segment_template = stream.segment_template;
   options.bandwidth = stream.bandwidth;
+  options.transport_stream_32_bytes_padding = transport_stream_32_bytes_padding_;
 
   std::shared_ptr<Muxer> muxer;
 

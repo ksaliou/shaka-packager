@@ -20,5 +20,6 @@ DECLARE_bool(generate_sidx_in_media_segments);
 DECLARE_string(temp_dir);
 DECLARE_bool(mp4_include_pssh_in_stream);
 DECLARE_int32(transport_stream_timestamp_offset_ms);
+DECLARE_bool(transport_stream_32_bytes_padding);
 
 #endif  // APP_MUXER_FLAGS_H_

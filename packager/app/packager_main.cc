@@ -440,6 +440,7 @@ base::Optional<PackagingParams> GetPackagingParams() {
 
   packaging_params.transport_stream_timestamp_offset_ms =
       FLAGS_transport_stream_timestamp_offset_ms;
+  packaging_params.transport_stream_32_bytes_padding = FLAGS_transport_stream_32_bytes_padding;
 
   packaging_params.output_media_info = FLAGS_output_media_info;
 

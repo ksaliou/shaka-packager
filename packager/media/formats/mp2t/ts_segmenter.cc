@@ -190,7 +190,8 @@ Status TsSegmenter::FinalizeSegment(int64_t start_timestamp, int64_t duration) {
   const int64_t file_size = segment_buffer_.Size();
   segment_number_++;
   
-  AddHls32Padding(file_size);
+  if(muxer_options_.transport_stream_32_bytes_padding)
+    AddHls32Padding(file_size);
 
   status = ProcessSegmentBuffer();
   if(!status.ok())

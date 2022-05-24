@@ -28,6 +28,9 @@ struct MuxerOptions {
   // compensate for negative timestamps in the input.
   int32_t transport_stream_timestamp_offset_ms = 0;
 
+  /// Add padding and stuffing to the end of TS segments to be a multiple of 32 bytes
+  bool transport_stream_32_bytes_padding = false;
+
   /// Output file name. If segment_template is not specified, the Muxer
   /// generates this single output file with all segments concatenated;
   /// Otherwise, it specifies the init segment name.

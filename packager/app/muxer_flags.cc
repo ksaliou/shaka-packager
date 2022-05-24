@@ -53,3 +53,7 @@ DEFINE_int32(transport_stream_timestamp_offset_ms,
              "input. For example, timestamps from ISO-BMFF after adjusted by "
              "EditList could be negative. In transport streams, timestamps are "
              "not allowed to be less than zero.");
+DEFINE_bool(transport_stream_32_bytes_padding,
+            false,
+            "Add padding and stuffing to the end of TS segments "
+            "to be a multiple of 32 bytes.");
