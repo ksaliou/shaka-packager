@@ -214,9 +214,7 @@ std::string SegmentInfoEntry::ToString() {
   if (use_byte_range_) {
     base::StringAppendF(&result, "\n#EXT-X-BYTERANGE:%" PRIu64,
                         segment_file_size_);
-    if (previous_segment_end_offset_ + 1 != start_byte_offset_) {
-      base::StringAppendF(&result, "@%" PRIu64, start_byte_offset_);
-    }
+    base::StringAppendF(&result, "@%" PRIu64, start_byte_offset_);
   }
 
   base::StringAppendF(&result, "\n%s", file_name_.c_str());
