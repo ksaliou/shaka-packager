@@ -135,6 +135,9 @@ struct RawKeyParams {
     std::vector<uint8_t> key_id;
     std::vector<uint8_t> key;
     std::vector<uint8_t> iv;
+
+    // Allow distinct pssh for each key
+    std::vector<uint8_t> pssh;
   };
   /// Defines the KeyInfo for the streams. An empty `StreamLabel` indicates the
   /// default `KeyInfo`, which applies to all the `StreamLabels` not present in

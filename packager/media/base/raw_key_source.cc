@@ -120,6 +120,16 @@ std::unique_ptr<RawKeySource> RawKeySource::Create(
       return std::unique_ptr<RawKeySource>();
     }
 
+    // Override global pssh info with specific information
+    if (!key_pair.pssh.empty()) {
+      key_system_info.clear();
+      if (!ProtectionSystemSpecificInfo::ParseBoxes(
+            key_pair.pssh.data(), key_pair.pssh.size(), &key_system_info)) {
+        LOG(ERROR) << ":pssh option should be full PSSH boxes.";
+        return std::unique_ptr<RawKeySource>();
+      }
+    }
+
     std::unique_ptr<EncryptionKey> encryption_key(new EncryptionKey);
     encryption_key->key_id = key_pair.key_id;
     encryption_key->key_ids = key_ids;

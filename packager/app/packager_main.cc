@@ -122,6 +122,7 @@ const char kDrmLabelLabel[] = "label";
 const char kKeyIdLabel[] = "key_id";
 const char kKeyLabel[] = "key";
 const char kKeyIvLabel[] = "iv";
+const char kKeyPsshLabel[] = "pssh";
 
 enum ExitStatus {
   kSuccess = 0,
@@ -219,6 +220,13 @@ bool ParseKeys(const std::string& keys, RawKeyParams* raw_key) {
       if (!base::HexStringToBytes(value_map[kKeyIvLabel], &key_info.iv)) {
         LOG(ERROR) << "Empty IV or invalid hex string for IV: "
                    << value_map[kKeyIvLabel];
+        return false;
+      }
+    }
+    if (!value_map[kKeyPsshLabel].empty()) {
+      if (!base::HexStringToBytes(value_map[kKeyPsshLabel], &key_info.pssh)) {
+        LOG(ERROR) << "Empty IV or invalid hex string for IV: "
+                   << value_map[kKeyPsshLabel];
         return false;
       }
     }
