@@ -149,6 +149,7 @@ enum FourCC : uint32_t {
   FOURCC_url = 0x75726c20,  // "url "
   FOURCC_urn = 0x75726e20,  // "urn "
   FOURCC_uuid = 0x75756964,
+  FOURCC_vexu = 0x76657875, // "vexu"
   FOURCC_vide = 0x76696465,
   FOURCC_vlab = 0x766c6162,
   FOURCC_vmhd = 0x766d6864,

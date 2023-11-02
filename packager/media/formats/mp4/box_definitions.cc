@@ -1584,12 +1584,13 @@ bool VideoSampleEntry::ReadWriteInternal(BoxBuffer* buffer) {
         actual_format == FOURCC_dvhe || actual_format == FOURCC_dvh1 ||
         actual_format == FOURCC_hev1 || actual_format == FOURCC_hvc1;
     if (is_hevc) {
-      for (FourCC fourcc : {FOURCC_dvcC, FOURCC_dvvC, FOURCC_hvcE}) {
+      for (FourCC fourcc : {FOURCC_dvcC, FOURCC_dvvC, FOURCC_hvcE, FOURCC_vexu}) {
         CodecConfiguration dv_box;
         dv_box.box_type = fourcc;
         RCHECK(buffer->TryReadWriteChild(&dv_box));
-        if (!dv_box.data.empty())
+        if (!dv_box.data.empty()) {
           extra_codec_configs.push_back(std::move(dv_box));
+        }
       }
     }
   } else {

@@ -20,9 +20,11 @@ bool DOVIDecoderConfigurationRecord::Parse(const std::vector<uint8_t>& data) {
   // https://www.dolby.com/us/en/technologies/dolby-vision/dolby-vision-bitstreams-within-the-iso-base-media-file-format-v2.0.pdf
   uint8_t major_version = 0;
   uint8_t minor_version = 0;
-  RCHECK(reader.ReadBits(8, &major_version) && major_version == 1 &&
-         reader.ReadBits(8, &minor_version) && minor_version == 0 &&
+
+  RCHECK(reader.ReadBits(8, &major_version) && major_version >= 1 &&
+         reader.ReadBits(8, &minor_version) && minor_version >= 0 &&
          reader.ReadBits(7, &profile_) && reader.ReadBits(6, &level_));
+
   return true;
 }
 
