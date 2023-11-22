@@ -38,6 +38,7 @@ enum FourCC : uint32_t {
   FOURCC_co64 = 0x636f3634,
   FOURCC_cmfc = 0x636d6663,
   FOURCC_cmfs = 0x636d6673,
+  FOURCC_colr = 0x636f6c72,
   FOURCC_ctim = 0x6374696d,
   FOURCC_ctts = 0x63747473,
   FOURCC_dOps = 0x644f7073,
@@ -67,6 +68,7 @@ enum FourCC : uint32_t {
   FOURCC_encv = 0x656e6376,
   FOURCC_esds = 0x65736473,
   FOURCC_fLaC = 0x664c6143,
+  FOURCC_fiel = 0x6669656c,
   FOURCC_free = 0x66726565,
   FOURCC_frma = 0x66726d61,
   FOURCC_ftyp = 0x66747970,
@@ -81,6 +83,7 @@ enum FourCC : uint32_t {
   FOURCC_iso8 = 0x69736f38,
   FOURCC_isom = 0x69736f6d,
   FOURCC_iods = 0x696f6473,
+  FOURCC_lhvC = 0x6c687643,
   FOURCC_mdat = 0x6d646174,
   FOURCC_mdhd = 0x6d646864,
   FOURCC_mdia = 0x6d646961,
@@ -149,7 +152,7 @@ enum FourCC : uint32_t {
   FOURCC_url = 0x75726c20,  // "url "
   FOURCC_urn = 0x75726e20,  // "urn "
   FOURCC_uuid = 0x75756964,
-  FOURCC_vexu = 0x76657875, // "vexu"
+  FOURCC_vexu = 0x76657875,
   FOURCC_vide = 0x76696465,
   FOURCC_vlab = 0x766c6162,
   FOURCC_vmhd = 0x766d6864,

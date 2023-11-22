@@ -131,12 +131,16 @@ struct H265Sps {
 
   int video_parameter_set_id = 0;
   int max_sub_layers_minus1 = 0;
+  int ext_or_max_sub_layers_minus1 = 0;
   bool temporal_id_nesting_flag = false;
 
   // general_profile_space (2), general_tier_flag (1), general_profile_idc (5),
   // general_profile_compatibility_flags (32),
   // general_constraint_indicator_flags (48), general_level_idc (8).
   int general_profile_tier_level_data[12] = {};
+
+  bool update_rep_format_flag = false;
+  int rep_format_idx = 0;
 
   int seq_parameter_set_id = 0;
 
@@ -168,6 +172,8 @@ struct H265Sps {
   int max_transform_hierarchy_depth_intra = 0;
 
   bool scaling_list_enabled_flag = false;
+  bool infer_scaling_list_flag = false;
+  int scaling_list_ref_layer_id = 0;
   bool scaling_list_data_present_flag = false;
   // Ignored: scaling_list_data()
 

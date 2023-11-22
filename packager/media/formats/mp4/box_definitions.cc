@@ -1584,7 +1584,7 @@ bool VideoSampleEntry::ReadWriteInternal(BoxBuffer* buffer) {
         actual_format == FOURCC_dvhe || actual_format == FOURCC_dvh1 ||
         actual_format == FOURCC_hev1 || actual_format == FOURCC_hvc1;
     if (is_hevc) {
-      for (FourCC fourcc : {FOURCC_dvcC, FOURCC_dvvC, FOURCC_hvcE, FOURCC_vexu}) {
+      for (FourCC fourcc : {FOURCC_dvcC, FOURCC_dvvC, FOURCC_hvcE, FOURCC_lhvC, FOURCC_vexu, FOURCC_fiel, FOURCC_colr}) {
         CodecConfiguration dv_box;
         dv_box.box_type = fourcc;
         RCHECK(buffer->TryReadWriteChild(&dv_box));

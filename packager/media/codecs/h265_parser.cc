@@ -221,11 +221,16 @@ H265Parser::Result H265Parser::ParseSliceHeader(const Nalu& nalu,
       TRUE_OR_RETURN(br->ReadBits(2, &slice_header->colour_plane_id));
     }
 
-    if (nalu.type() != Nalu::H265_IDR_W_RADL &&
-        nalu.type() != Nalu::H265_IDR_N_LP) {
+    if ( nalu.nuh_layer_id() > 0 || 
+      (nalu.type() != Nalu::H265_IDR_W_RADL &&
+        nalu.type() != Nalu::H265_IDR_N_LP))
+    {
       TRUE_OR_RETURN(br->ReadBits(sps->log2_max_pic_order_cnt_lsb_minus4 + 4,
                                   &slice_header->slice_pic_order_cnt_lsb));
+    }
 
+    if (nalu.type() != Nalu::H265_IDR_W_RADL &&
+        nalu.type() != Nalu::H265_IDR_N_LP) {
       TRUE_OR_RETURN(
           br->ReadBool(&slice_header->short_term_ref_pic_set_sps_flag));
       if (!slice_header->short_term_ref_pic_set_sps_flag) {
@@ -282,8 +287,9 @@ H265Parser::Result H265Parser::ParseSliceHeader(const Nalu& nalu,
     }
 
     if (nalu.nuh_layer_id() != 0) {
-      NOTIMPLEMENTED() << "Multi-layer streams are not supported.";
-      return kUnsupportedStream;
+      //NOTIMPLEMENTED() << "Multi-layer streams are not supported.";
+      slice_header->header_bit_size = nalu.payload_size() * 8;
+      return kOk;
     }
 
     if (sps->sample_adaptive_offset_enabled_flag) {
@@ -519,40 +525,63 @@ H265Parser::Result H265Parser::ParseSps(const Nalu& nalu, int* sps_id) {
   std::unique_ptr<H265Sps> sps(new H265Sps);
 
   TRUE_OR_RETURN(br->ReadBits(4, &sps->video_parameter_set_id));
-  TRUE_OR_RETURN(br->ReadBits(3, &sps->max_sub_layers_minus1));
-  TRUE_OR_RETURN(br->ReadBool(&sps->temporal_id_nesting_flag));
 
-  OK_OR_RETURN(
-      ReadProfileTierLevel(true, sps->max_sub_layers_minus1, br, sps.get()));
+  if (nalu.nuh_layer_id() == 0) {
+    TRUE_OR_RETURN(br->ReadBits(3, &sps->max_sub_layers_minus1));
+  } else {
+    TRUE_OR_RETURN(br->ReadBits(3, &sps->ext_or_max_sub_layers_minus1));
+  }
+
+  bool multiLayerExtSpsFlag = nalu.nuh_layer_id() != 0 && sps->ext_or_max_sub_layers_minus1 == 7;
+
+  if (!multiLayerExtSpsFlag) {
+    TRUE_OR_RETURN(br->ReadBool(&sps->temporal_id_nesting_flag));
+
+    OK_OR_RETURN(
+        ReadProfileTierLevel(true, sps->max_sub_layers_minus1, br, sps.get()));
+  }
 
   TRUE_OR_RETURN(br->ReadUE(&sps->seq_parameter_set_id));
-  TRUE_OR_RETURN(br->ReadUE(&sps->chroma_format_idc));
-  if (sps->chroma_format_idc == 3) {
-    TRUE_OR_RETURN(br->ReadBool(&sps->separate_colour_plane_flag));
-  }
-  TRUE_OR_RETURN(br->ReadUE(&sps->pic_width_in_luma_samples));
-  TRUE_OR_RETURN(br->ReadUE(&sps->pic_height_in_luma_samples));
+  LOG(ERROR) << "SPS ID " << sps->seq_parameter_set_id;
 
-  TRUE_OR_RETURN(br->ReadBool(&sps->conformance_window_flag));
-  if (sps->conformance_window_flag) {
-    TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_left_offset));
-    TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_right_offset));
-    TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_top_offset));
-    TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_bottom_offset));
+  if (multiLayerExtSpsFlag) {
+    TRUE_OR_RETURN(br->ReadBool(&sps->update_rep_format_flag));
+    
+    if (sps->update_rep_format_flag) {
+      TRUE_OR_RETURN(br->ReadBits(3, &sps->rep_format_idx));
+    }
+  } else {
+    TRUE_OR_RETURN(br->ReadUE(&sps->chroma_format_idc));
+    if (sps->chroma_format_idc == 3) {
+      TRUE_OR_RETURN(br->ReadBool(&sps->separate_colour_plane_flag));
+    }
+    TRUE_OR_RETURN(br->ReadUE(&sps->pic_width_in_luma_samples));
+    TRUE_OR_RETURN(br->ReadUE(&sps->pic_height_in_luma_samples));
+
+    TRUE_OR_RETURN(br->ReadBool(&sps->conformance_window_flag));
+    if (sps->conformance_window_flag) {
+      TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_left_offset));
+      TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_right_offset));
+      TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_top_offset));
+      TRUE_OR_RETURN(br->ReadUE(&sps->conf_win_bottom_offset));
+    }
+
+    TRUE_OR_RETURN(br->ReadUE(&sps->bit_depth_luma_minus8));
+    TRUE_OR_RETURN(br->ReadUE(&sps->bit_depth_chroma_minus8));
   }
 
-  TRUE_OR_RETURN(br->ReadUE(&sps->bit_depth_luma_minus8));
-  TRUE_OR_RETURN(br->ReadUE(&sps->bit_depth_chroma_minus8));
   TRUE_OR_RETURN(br->ReadUE(&sps->log2_max_pic_order_cnt_lsb_minus4));
 
-  TRUE_OR_RETURN(br->ReadBool(&sps->sub_layer_ordering_info_present_flag));
-  int start = sps->sub_layer_ordering_info_present_flag
-                  ? 0
-                  : sps->max_sub_layers_minus1;
-  for (int i = start; i <= sps->max_sub_layers_minus1; i++) {
-    TRUE_OR_RETURN(br->ReadUE(&sps->max_dec_pic_buffering_minus1[i]));
-    TRUE_OR_RETURN(br->ReadUE(&sps->max_num_reorder_pics[i]));
-    TRUE_OR_RETURN(br->ReadUE(&sps->max_latency_increase_plus1[i]));
+  if (!multiLayerExtSpsFlag) {
+    TRUE_OR_RETURN(br->ReadBool(&sps->sub_layer_ordering_info_present_flag));
+    int start = sps->sub_layer_ordering_info_present_flag
+                    ? 0
+                    : sps->max_sub_layers_minus1;
+    for (int i = start; i <= sps->max_sub_layers_minus1; i++) {
+      TRUE_OR_RETURN(br->ReadUE(&sps->max_dec_pic_buffering_minus1[i]));
+      TRUE_OR_RETURN(br->ReadUE(&sps->max_num_reorder_pics[i]));
+      TRUE_OR_RETURN(br->ReadUE(&sps->max_latency_increase_plus1[i]));
+    }
   }
 
   TRUE_OR_RETURN(br->ReadUE(&sps->log2_min_luma_coding_block_size_minus3));
@@ -564,9 +593,17 @@ H265Parser::Result H265Parser::ParseSps(const Nalu& nalu, int* sps_id) {
 
   TRUE_OR_RETURN(br->ReadBool(&sps->scaling_list_enabled_flag));
   if (sps->scaling_list_enabled_flag) {
-    TRUE_OR_RETURN(br->ReadBool(&sps->scaling_list_data_present_flag));
-    if (sps->scaling_list_data_present_flag) {
-      OK_OR_RETURN(SkipScalingListData(br));
+    if (multiLayerExtSpsFlag) {
+      TRUE_OR_RETURN(br->ReadBool(&sps->infer_scaling_list_flag));
+    }
+
+    if (sps->infer_scaling_list_flag) {
+      TRUE_OR_RETURN(br->ReadBits(6, &sps->scaling_list_ref_layer_id));
+    } else {
+      TRUE_OR_RETURN(br->ReadBool(&sps->scaling_list_data_present_flag));
+      if (sps->scaling_list_data_present_flag) {
+        OK_OR_RETURN(SkipScalingListData(br));
+      }
     }
   }
 
