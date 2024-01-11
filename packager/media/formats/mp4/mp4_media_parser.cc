@@ -666,8 +666,16 @@ bool MP4MediaParser::ParseMoov(BoxReader* reader) {
           nalu_length_size = hevc_config.nalu_length_size();
           transfer_characteristics = hevc_config.transfer_characteristics();
 
-          if (!entry.extra_codec_configs.empty()) {
-            // |extra_codec_configs| is present only for Dolby Vision.
+          // |extra_codec_configs| can contain dolby vision data or parralax data.
+          // so we now check the type of config boxes
+          bool hasDoviCodecConfig = false;
+          for (const CodecConfiguration& config : entry.extra_codec_configs) {
+            if (config.box_type == FOURCC_dvcC || config.box_type == FOURCC_dvvC) {
+              hasDoviCodecConfig = true;
+            }
+          }
+
+          if (hasDoviCodecConfig) {
             if (!UpdateCodecStringForDolbyVision(
                     actual_format, entry.extra_codec_configs, &codec_string)) {
               return false;
